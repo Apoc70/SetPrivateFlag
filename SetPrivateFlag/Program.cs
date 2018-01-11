@@ -4,9 +4,10 @@
 //
 // Published under MIT license
 //
-// Read more in the following blog post: 
+// Read more in the following blog post: https://www.granikos.eu/en/justcantgetenough/PostId/379/set-mailbox-item-private-flag
 //
 // Find more Exchange community scripts at: http://scripts.granikos.eu
+// Please report issues or feature request here: https://github.com/Apoc70/SetPrivateFlag/issues 
 //
 // Version 1.0.0.0 | Published 2018-01-11
 
