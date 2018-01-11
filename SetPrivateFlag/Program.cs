@@ -26,6 +26,11 @@ namespace SetPrivateFlag
         private static FindItemsResults<Item> findResults;
         private static readonly log4net.ILog log = log4net.LogManager.GetLogger(System.Reflection.MethodBase.GetCurrentMethod().DeclaringType);
 
+        /// <summary>
+        /// Main program section
+        /// Handling all validation and code logic
+        /// </summary>
+        /// <param name="args"></param>
         static void Main(string[] args)
         {
             if (args.Length > 0)
@@ -79,22 +84,14 @@ namespace SetPrivateFlag
                 }
 
                 // Log all arguments if DEBUG is set in xml
-                log.Debug("Parsing arguments");
-                log.Debug("Arguments:");
+                log.Debug("Parsing arguments: ");
                 log.Debug(string.Format("mailbox: {0}", arguments.Mailbox));
+                log.Debug(string.Format("subject: {0}", arguments.Subject));
                 log.Debug(string.Format("Help: {0}", arguments.Help));
                 log.Debug(string.Format("noconfirmation: {0}", arguments.noconfirmation));
                 log.Debug(string.Format("logonly: {0}", arguments.LogOnly));
                 log.Debug(string.Format("impersonate: {0}", arguments.impersonate));
                 log.Debug(string.Format("allowredirection: {0}", arguments.AllowRedirection));
-                if (arguments.Foldername != null)
-                {
-                    log.Debug(string.Format("foldername: {0}", arguments.Foldername));
-                }
-                else
-                {
-                    log.Debug("foldername: not specified");
-                }
 
                 if (arguments.User != null)
                 {
@@ -109,11 +106,11 @@ namespace SetPrivateFlag
                 log.Debug(string.Format("ignorecertificate: {0}", arguments.IgnoreCertificate));
                 if (arguments.URL != null)
                 {
-                    log.Debug(string.Format("server URL: {0}", arguments.URL));
+                    log.Debug(string.Format("Server URL: {0}", arguments.URL));
                 }
                 else
                 {
-                    log.Debug("server URL: using autodiscover");
+                    log.Debug("Server URL: using AutoDiscover");
                 }
 
                 // Check if we need to ignore certificate errors
@@ -124,7 +121,7 @@ namespace SetPrivateFlag
                     ServicePointManager.ServerCertificateValidationCallback += (sender, cert, chain, sslPolicyErrors) => true;
                 }
 
-                // create the service
+                // create the EWS service
                 ExchangeService ExService;
                 // connect to the server
                 if (arguments.URL != null)
@@ -141,39 +138,6 @@ namespace SetPrivateFlag
                 // find all folders (under MsgFolderRoot)
                 List<Folder> FolderList = Folders(ExService);
 
-                // check if we need to remove items from the list because we want to filter it (folderpath)
-                string FolderName = arguments.Foldername;
-
-                if (log.IsInfoEnabled) log.Info(string.Format("Folders with minimum one item inside: {0}", FolderList.Count));
-                if (FolderName != null)
-                {
-                    if (FolderName.Length > 0)
-                    {
-                        if (log.IsInfoEnabled)
-                            log.Info("Filter the folder list to apply filter.");
-
-                        for (int i = FolderList.Count - 1; i >= 0; i--) // yes, we need to it this way...
-                        {
-                            try
-                            {
-                                string FolderPath;
-
-                                FolderPath = GetFolderPath(ExService, FolderList[i].Id);
-
-                                if (!(FolderPath.Contains(FolderName)))
-                                {
-                                    log.Debug(string.Format("The folder: \"{0}\" does not match with the filter: \"{1}\"", FolderPath, FolderName));
-                                    FolderList.RemoveAt(i);
-                                }
-                            }
-                            catch
-                            {
-                                Environment.Exit(2);
-                            }
-                        }
-                    }
-                }
-
                 // now try to find all items that are marked as "private"
                 for (int i = FolderList.Count - 1; i >= 0; i--)
                 {
@@ -181,7 +145,7 @@ namespace SetPrivateFlag
 
                     if (log.IsDebugEnabled) log.Debug(string.Format("ID: {0}", FolderList[i].Id));
 
-                    List<Item> Results = PrivateItems(FolderList[i]);
+                    List<Item> Results = PrivateItems(FolderList[i], Subject);
 
                     if (Results.Count > 0)
                     {
@@ -194,21 +158,21 @@ namespace SetPrivateFlag
                         {
                             if (log.IsInfoEnabled)
                             {
-                                if (log.IsInfoEnabled) log.Info(string.Format("Found private element. Folder: \"{0}\" ", GetFolderPath(ExService, FolderList[i].Id)));
+                                if (log.IsInfoEnabled) log.Info(string.Format("Elements found. Folder: \"{0}\" ", GetFolderPath(ExService, FolderList[i].Id)));
                                 if (log.IsInfoEnabled) log.Info(string.Format("Subject: \"{0}\"", Result.Subject));
                                 if (log.IsDebugEnabled) log.Debug(string.Format("ID of the item: {0}", Result.Id));
 
                             }
                             else
                             {
-                                Console.WriteLine("Found private element. Folder: {0}", GetFolderPath(ExService, FolderList[i].Id));
+                                Console.WriteLine("Element found. Folder: {0}", GetFolderPath(ExService, FolderList[i].Id));
                                 Console.WriteLine("Subject: {0}", Result.Subject);
                             }
                             if (!(arguments.noconfirmation))
                             {
                                 if (!(arguments.LogOnly))
                                 {
-                                    Console.WriteLine(string.Format("Change to normal? (Y/N) (Folder: {0} - Subject {1})", GetFolderPath(ExService, FolderList[i].Id), Result.Subject));
+                                    Console.WriteLine(string.Format("Change to private? (Y/N) (Folder: {0} - Subject {1})", GetFolderPath(ExService, FolderList[i].Id), Result.Subject));
                                     string Question = Console.ReadLine();
 
                                     if (Question == "y" || Question == "Y")
@@ -222,13 +186,14 @@ namespace SetPrivateFlag
                             {
                                 if (!(arguments.LogOnly))
                                 {
+                                    string Message = "Changing item without confirmation because -noconfirmation is true.";
                                     if (log.IsInfoEnabled)
                                     {
-                                        log.Info("Changing item without confirmation because -noconfirmation is true.");
+                                        log.Info(Message);
                                     }
                                     else
                                     {
-                                        Console.WriteLine("Changing item without confirmation because -noconfirmation is true.");
+                                        Console.WriteLine(Message);
                                     }
                                     ChangeItem(Result);
                                 }
@@ -272,9 +237,9 @@ namespace SetPrivateFlag
                             }
 
                             // Set the value of the extended property to 0 (which is Sensitivity normal, 2 would be private)
-                            Message.ExtendedProperties[extendedPropertyindex].Value = 0;
+                            Message.ExtendedProperties[extendedPropertyindex].Value = 2;
 
-                            // Update the item on the server with the new client-side value of the target extended property.
+                            // Update the item on the server with the new client-side value of the target extended property
                             Message.Update(ConflictResolutionMode.AlwaysOverwrite);
                         }
                         extendedPropertyindex++;
@@ -466,7 +431,7 @@ namespace SetPrivateFlag
         /// </summary>
         /// <param name="MailboxFolder">The mailbox folder to search</param>
         /// <returns>Items of an item search operation</returns>
-        public static List<Item> PrivateItems(Folder MailboxFolder)
+        public static List<Item> PrivateItems(Folder MailboxFolder, string Subject)
         {
             int pageSize = 100;
             int pageOffset = 0;
@@ -474,7 +439,7 @@ namespace SetPrivateFlag
             var resultItems = new List<Item>();
 
             var extendedPropertyDefinition = new ExtendedPropertyDefinition(0x36, MapiPropertyType.Integer);
-            SearchFilter searchFilter = new SearchFilter.IsEqualTo(ItemSchema.Sensitivity, "Private");
+            SearchFilter searchFilter = new SearchFilter.ContainsSubstring(EmailMessageSchema.Subject, Subject);
 
             var view = new ItemView(pageSize, pageOffset);
             view.PropertySet = new PropertySet(BasePropertySet.FirstClassProperties, ItemSchema.Sensitivity, ItemSchema.Subject, extendedPropertyDefinition);
@@ -516,7 +481,7 @@ namespace SetPrivateFlag
         public static void DisplayHelp()
         {
             Console.WriteLine("Usage:");
-            Console.WriteLine("SetPrivateFlag.exe -mailbox \"user@example.com\" -subject \"[private]\" [-logonly] [-foldername \"Inbox\" [-noconfirmation] [-ignorecertificate] [-url \"https://server/EWS/Exchange.asmx\"] [-user user@example.com] [-password Pa$$w0rd] [-impersonate]");
+            Console.WriteLine("SetPrivateFlag.exe -mailbox \"user@example.com\" -subject \"[private]\" [-logonly] [-noconfirmation] [-ignorecertificate] [-url \"https://server/EWS/Exchange.asmx\"] [-user user@example.com] [-password Pa$$w0rd] [-impersonate]");
         }
     }
 }
