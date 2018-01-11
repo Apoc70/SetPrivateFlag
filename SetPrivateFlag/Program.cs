@@ -42,16 +42,36 @@ namespace SetPrivateFlag
                 log.Info("Application started");
 
                 string Mailbox = arguments.Mailbox;
+                string Subject = arguments.Subject;
 
                 if ((Mailbox == null) || (Mailbox.Length == 0))
                 {
+                    string Message = "No mailbox is given. Use -help to refer to the usage.";
+
                     if (log.IsWarnEnabled)
                     {
-                        log.Warn("No mailbox is given. Use -help to refer to the usage.");
+                        log.Warn(Message);
                     }
                     else
                     {
-                        Console.WriteLine("No mailbox is given. Use -help to refer to the usage.");
+                        Console.WriteLine(Message);
+                    }
+
+                    DisplayHelp();
+                    Environment.Exit(1);
+                }
+
+                if ((Subject == null) || (Subject.Length == 0))
+                {
+                    string Message = "No subject filter is given. Use -help to refer to the usage.";
+
+                    if (log.IsWarnEnabled)
+                    {
+                        log.Warn(Message);
+                    }
+                    else
+                    {
+                        Console.WriteLine(Message);
                     }
 
                     DisplayHelp();

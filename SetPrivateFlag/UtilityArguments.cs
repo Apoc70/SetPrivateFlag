@@ -21,6 +21,14 @@ namespace SetPrivateFlag
             }
         }
 
+        public string Subject
+        {
+            get
+            {
+                return GetValue("-subject");
+            }
+        }
+
         public bool noconfirmation
         {
             get
