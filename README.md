@@ -2,6 +2,8 @@
 
 SetPrivateFlags.exe will SET the _private_ flag on all messages matching a subject substring.
 
+See [https://github.com/Apoc70/RemovePrivateFlag](https://github.com/Apoc70/RemovePrivateFlag), if you want to _remove_ private message flags.
+
 ## Why should I use this
 
 When you migrate from an alternative email server solution (e.g. Lotus Notes) and a mailbox contains confidential messages, you might want to mark such message as _private_ after content migration.
